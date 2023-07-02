@@ -1,8 +1,15 @@
-import React, { useState } from "react";
-import "./App.css";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
+import { BrowserRouter as Router, Route } from "react-router-dom";
+
+import Header from "./components/Header";
 import Tasks from "./components/tasks";
-import "./index.css";
 import AddTask from "./components/AddTask";
+import TaskDetails from "./components/TaskDetails";
+
+import "./components/styles/index.css";
+import "./components/styles/App.css";
 
 const App = () => {
   // let message = "Mensagem principal";
@@ -25,25 +32,64 @@ const App = () => {
     },
   ]);
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const { data } = await axios.get(
+        "https://jsonplaceholder.cypress.io/todos?_limit=10"
+      );
+
+      setTasks(data);
+    };
+    fetchTasks();
+  }, []);
+
+  const handleTaskClick = (taskId) => {
+    const newTasks = tasks.map((task) => {
+      if (task.id === taskId) return { ...task, completed: !task.completed };
+      return task;
+    });
+
+    setTasks(newTasks);
+  };
+
   const handleTaskAddition = (taskTitle) => {
     const newTasks = [
       ...tasks,
       {
         title: taskTitle,
-        id: Math.random(10),
+        id: uuidv4(),
         completed: false,
       },
     ];
     setTasks(newTasks);
   };
 
+  const handleTaskDeletion = (taskId) => {
+    const newTasks = tasks.filter((task) => task.id !== taskId);
+    setTasks(newTasks);
+  };
+
   return (
-    <div>
+    <Router>
       <div className="container">
-        <AddTask handleTaskAddition={handleTaskAddition} />
-        <Tasks tasks={tasks} />
+        <Header />
+        <Route
+          path="/"
+          exact
+          render={() => (
+            <>
+              <AddTask handleTaskAddition={handleTaskAddition} />
+              <Tasks
+                tasks={tasks}
+                handleTaskClick={handleTaskClick}
+                handleTaskDeletion={handleTaskDeletion}
+              />
+            </>
+          )}
+        />
+        <Route path="/:taskTitle" exact component={TaskDetails} />
       </div>
-    </div>
+    </Router>
   );
 };
 
